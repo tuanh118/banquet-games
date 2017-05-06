@@ -1,0 +1,19 @@
+html {
+    background-color: #222;
+}
+
+.App {
+  text-align: center;
+  background-color: #222;
+  color: white;
+}
+
+.App-header {
+  height: 50px;
+  padding: 2px;
+  margin-bottom: 20px;
+}
+
+.cell.clicked {
+    background-color: green;
+}
