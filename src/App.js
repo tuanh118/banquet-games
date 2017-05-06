@@ -5,6 +5,7 @@ import ReactModal from 'react-modal';
 import './App.css';
 
 import Category from './Category';
+import Cell from './Cell';
 
 class App extends Component {
     state = {
@@ -72,15 +73,32 @@ class App extends Component {
             [false, false, false, false, false, false],
             [false, false, false, false, false, false]
         ]),
-        activeCategoryId: null,
-        activeQuestionId: null
+        isModalOpen: false,
+        modalLabel: null,
+        modalContent: null,
+        round: 2,
+        bettingQuestions: [
+            'Nhiều credit hours nhất',
+            'Facebook nhiều bạn nhất',
+            'Facebook lâu đời nhất',
+            'Instagram nhiều follower nhất',
+            'Instagram nhiều ảnh nhất',
+            'Inbox nhiều unread nhất',
+            'Youtube nhiều subscribed channels nhất',
+            'Hit đc note cao nhất',
+            'Hit đc note thấp nhất'
+        ],
+        bettingClicked: fromJS([
+            false, false, false, false, false, false, false, false, false
+        ])
     }
 
     onCellClick = (categoryId, questionId) => {
-        this.setState(({ clicked }) => ({
+        this.setState(({ clicked, categories, scores }) => ({
             // Set active question
-            activeCategoryId: categoryId,
-            activeQuestionId: questionId,
+            isModalOpen: true,
+            modalLabel: `${categories[categoryId].label} - ${scores[questionId]}`,
+            modalContent: categories[categoryId].questions[questionId],
 
             // Toggle clicked
             clicked: clicked.setIn([categoryId, questionId], true)
@@ -89,45 +107,72 @@ class App extends Component {
 
     handleCloseModal = () => {
         this.setState({
-            activeCategoryId: null,
-            activeQuestionId: null
+            isModalOpen: false
         });
     }
 
-    render() {
-        const { categories, clicked, activeCategoryId, activeQuestionId, scores } = this.state;
+    goNextRound = () => {
+        this.setState({
+            round: 2
+        })
+    }
 
-        const isModalOpen = activeCategoryId !== null ? true : false;
-        const modalLabel = isModalOpen ? `${categories[activeCategoryId].label} - ${scores[activeQuestionId]}` : null;
-        const modalChildren = isModalOpen ? categories[activeCategoryId].questions[activeQuestionId] : null;
+    goPreviousRound = () => {
+        this.setState({
+            round: 1
+        })
+    }
+
+    buildModal = () => {
+        const { isModalOpen, modalLabel, modalContent } = this.state;
 
         return (
-            <div className="App">
-                <div className="App-header">
-                    <h2>VINCEF Jeopardy</h2>
-                </div>
-                <ReactModal
-                    isOpen={isModalOpen}
-                    contentLabel='Question'
-                    onRequestClose={this.handleCloseModal}
-                >
-                    <div className="col-xs-11">
-                        <h1>{modalLabel}</h1>
-                        <div style={{
-                                fontSize: 'larger'
-                            }}>
-                            {modalChildren}
-                        </div>
+            <ReactModal
+                isOpen={isModalOpen}
+                contentLabel='Question'
+                onRequestClose={this.handleCloseModal}
+            >
+                <div className="col-xs-11">
+                    <h1>{modalLabel}</h1>
+                    <div style={{
+                            fontSize: 'larger'
+                        }}>
+                        {modalContent}
                     </div>
-                    <span
-                        className="glyphicon glyphicon-remove-sign col-xs-1"
-                        onClick={this.handleCloseModal}
-                        style={{
-                            float: 'right',
-                            cursor: 'pointer'
-                        }} />
-                </ReactModal>
-                <div>
+                </div>
+                <span
+                    className="glyphicon glyphicon-remove-sign col-xs-1"
+                    onClick={this.handleCloseModal}
+                    style={{
+                        float: 'right',
+                        cursor: 'pointer'
+                    }} />
+            </ReactModal>
+        );
+    }
+
+    onBettingClick = (categoryId, questionId) => {
+        // Ignore categoryId
+        this.setState(({ bettingQuestions, bettingClicked }) => ({
+            // Set modal content and open modal
+            isModalOpen: true,
+            modalLabel: `Cược Điểm - ${questionId + 1}`,
+            modalContent: bettingQuestions[questionId],
+
+            // Toggle clicked
+            bettingClicked: bettingClicked.set(questionId, true)
+        }));
+    }
+
+    render() {
+        const { categories, clicked, round, bettingQuestions, bettingClicked } = this.state;
+
+        const round1 = round === 1 && (
+            <div id="round-1">
+                <h2 className="App-header">
+                    VINCEF Jeopardy
+                </h2>
+                <div className="col-xs-11">
                     {categories.map((category, i) => (
                         <Category
                             key={category.label}
@@ -139,6 +184,46 @@ class App extends Component {
                         />
                     ))}
                 </div>
+                <span
+                    className="glyphicon glyphicon-circle-arrow-right col-xs-1"
+                    onClick={this.goNextRound}
+                    style={{
+                        cursor: 'pointer'
+                    }}
+                />
+            </div>
+        );
+
+        const round2 = round === 2 && (
+            <div id="round-2">
+                <h2 className="App-header">Cược Điểm</h2>
+                <span
+                    className="glyphicon glyphicon-circle-arrow-left col-xs-1"
+                    onClick={this.goPreviousRound}
+                    style={{
+                        cursor: 'pointer'
+                    }}
+                />
+                <div className="col-xs-11">
+                    {bettingQuestions.map((question, i) => (
+                        <Cell
+                            key={i}
+                            id={i}
+                            categoryId={0}
+                            onClick={this.onBettingClick}
+                            clicked={bettingClicked.get(i)}
+                            score={i+1}
+                        />
+                    ))}
+                </div>
+            </div>
+        );
+
+        return (
+            <div className="App">
+                {round1}
+                {round2}
+                {this.buildModal()}
             </div>
         );
     }
